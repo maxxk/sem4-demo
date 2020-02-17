@@ -3,6 +3,6 @@
 // Или вместо этих трёх строк — #pragma once в начале файла
 
 // Вывести "Hello, world!"
-void print_hello();
+void print_hello(void);
 
 #endif
