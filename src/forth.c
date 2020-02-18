@@ -54,7 +54,7 @@ void forth_init(struct forth *forth, size_t stack)
 
 void forth_free(struct forth *forth)
 {
-    free(forth->sp);
+    free(forth->sp0);
     forth->sp = 0;
     forth->sp0 = 0;
 }
@@ -64,4 +64,11 @@ void forth_push(struct forth *forth, cell number)
     assert(forth->sp + 1 - forth->sp0 < (int)forth->stack);
     *forth->sp = number;
     forth->sp += 1;
+}
+
+cell forth_pop(struct forth *forth)
+{
+    assert(forth->sp > forth->sp0);
+    forth->sp -= 1;
+    return *forth->sp;
 }

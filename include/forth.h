@@ -26,5 +26,6 @@ struct forth {
 void forth_init(struct forth *forth, size_t stack);
 void forth_free(struct forth *forth);
 void forth_push(struct forth *forth, cell number);
+cell forth_pop(struct forth *forth);
 
 #endif

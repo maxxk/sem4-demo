@@ -1,11 +1,15 @@
 #include "forth.h"
+#include "words.h"
 #include <inttypes.h>
 #include <stdio.h>
+#include <string.h>
 
 #define BUFFER 32 
 // стараемся не использовать в коде «волшебные константы»,
 // даём каждой имя
 #define STACK 16384
+
+#define MAX(a, b) (a < b ? b : a)
 
 int main(void)
 {
@@ -19,12 +23,16 @@ int main(void)
 
     forth_init(&forth, STACK);
     while ((status = read_word(stdin, BUFFER, buffer, &length)) == FORTH_OK) {
-        printf("Read: '%.*s'\n", (int)length, buffer);
         value = strtointptr(buffer, &last, 10);
         if (last - buffer < (int)length) { // считали не всю строку ⇒ не число
-            printf("Not a number\n");
+            if (!strncmp(buffer, "pop", MAX(length, strlen("pop")))) {
+                pop(&forth);
+            } else if (!strncmp(buffer, "show", MAX(length, strlen("show")))) {
+                show(&forth);
+            } else {
+                printf("Unknown command\n");
+            }
         } else {
-            printf("Number: %" PRIdPTR "\n", value);
             forth_push(&forth, value);
         }
     }
