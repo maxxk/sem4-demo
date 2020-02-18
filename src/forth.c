@@ -1,5 +1,8 @@
 #include "forth.h"
 #include <ctype.h>
+#include <inttypes.h>
+#include <limits.h>
+#include <stdlib.h>
 
 enum forth_result read_word(FILE* input, size_t size, char buffer[size],
     size_t *length)
@@ -30,4 +33,13 @@ enum forth_result read_word(FILE* input, size_t size, char buffer[size],
     }
 
     return FORTH_EOF;
+}
+
+intptr_t strtointptr(const char *str, char **str_end, int base)
+{
+    if (INTPTR_MAX > LONG_MAX) {
+        return (intptr_t)strtoll(str, str_end, base);
+    } else {
+        return (intptr_t)strtol(str, str_end, base);
+    }
 }
