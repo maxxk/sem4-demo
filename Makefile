@@ -1,6 +1,6 @@
-all: build/hello
+all: build/forth
 
-build/hello: build/hello.c.o build/main.c.o
+build/forth: build/forth.c.o build/main.c.o
 	gcc $^ -o $@ 
 
 CFLAGS_WARN = -std=c99 -pedantic -Wall -Werror -Wextra -pedantic-errors \
