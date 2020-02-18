@@ -1,4 +1,5 @@
 #include "forth.h"
+#include <assert.h>
 #include <ctype.h>
 #include <inttypes.h>
 #include <limits.h>
@@ -42,4 +43,25 @@ intptr_t strtointptr(const char *str, char **str_end, int base)
     } else {
         return (intptr_t)strtol(str, str_end, base);
     }
+}
+
+void forth_init(struct forth *forth, size_t stack)
+{
+    forth->stack = stack;
+    forth->sp0 = malloc(forth->stack * sizeof(cell));
+    forth->sp = forth->sp0;
+}
+
+void forth_free(struct forth *forth)
+{
+    free(forth->sp);
+    forth->sp = 0;
+    forth->sp0 = 0;
+}
+
+void forth_push(struct forth *forth, cell number)
+{
+    assert(forth->sp + 1 - forth->sp0 < (int)forth->stack);
+    *forth->sp = number;
+    forth->sp += 1;
 }

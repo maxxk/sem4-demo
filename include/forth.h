@@ -17,4 +17,14 @@ enum forth_result read_word(FILE* input, size_t size, char buffer[size],
 
 intptr_t strtointptr(const char *str, char **str_end, int base);
 
+struct forth {
+    cell *sp; // Stack Pointer — указатель на первую свободную ячейку стека
+    cell *sp0; // Stack Pointer 0 — исходный указатель, для освобождения памяти
+    size_t stack; // размер стека в ячейках
+};
+
+void forth_init(struct forth *forth, size_t stack);
+void forth_free(struct forth *forth);
+void forth_push(struct forth *forth, cell number);
+
 #endif
