@@ -74,6 +74,12 @@ cell forth_pop(struct forth *forth)
     return *forth->sp;
 }
 
+cell *forth_top(struct forth *forth)
+{
+    assert(forth->sp > forth->sp0);
+    return forth->sp - 1;
+}
+
 #define BUFFER 32 
 enum forth_result forth_run(struct forth *forth, struct word *head)
 {
