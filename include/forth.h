@@ -36,6 +36,8 @@ struct word {
     function handler; // обработчик
 };
 
+enum forth_result forth_run(struct forth *forth, struct word *head);
+
 struct word *word_create(const char *name, function handler,
     const struct word *next);
 

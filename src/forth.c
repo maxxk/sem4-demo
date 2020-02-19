@@ -74,6 +74,32 @@ cell forth_pop(struct forth *forth)
     return *forth->sp;
 }
 
+#define BUFFER 32 
+enum forth_result forth_run(struct forth *forth, struct word *head)
+{
+    enum forth_result status;
+    char *last;
+    char buffer[BUFFER+1] = {0}; // 1 символ на завершающий нулевой
+    size_t length = 0;
+    cell value = 0;
+    const struct word *found = NULL;
+
+    while ((status = read_word(stdin, BUFFER, buffer, &length)) == FORTH_OK) {
+        value = strtointptr(buffer, &last, 10);
+        if (last - buffer < (int)length) { // считали не всю строку ⇒ не число
+            if ((found = word_find(length, buffer, head)) != NULL) {
+                found->handler(forth);
+            } else {
+                printf("Unknown command\n");
+            }
+        } else {
+            forth_push(forth, value);
+        }
+    }
+    return status;
+}
+#undef BUFFER
+
 struct word* word_create(const char *name, function handler,
     const struct word *next)
 {
