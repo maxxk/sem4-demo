@@ -2,7 +2,6 @@
 #include "words.h"
 #include <inttypes.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #define BUFFER 32 
@@ -22,10 +21,8 @@ int main(void)
     cell value = 0;
     struct forth forth = {0};
     const struct word *found = NULL;
-    struct word *previous = NULL;
 
-    struct word *head = word_create("pop", pop, NULL);
-    head = word_create("show", show, head);
+    struct word *head = words_init();
 
     forth_init(&forth, STACK);
     while ((status = read_word(stdin, BUFFER, buffer, &length)) == FORTH_OK) {
@@ -42,12 +39,7 @@ int main(void)
     }
     printf("Complete with status: %d\n", status);
     forth_free(&forth);
-
-    while (head) {
-        previous = head;
-        head =(struct word*)head->next;
-        free(previous);
-    }
+    words_free(head);
 
     return 0;
 }
