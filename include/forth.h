@@ -28,4 +28,19 @@ void forth_free(struct forth *forth);
 void forth_push(struct forth *forth, cell number);
 cell forth_pop(struct forth *forth);
 
+typedef void (*function)(struct forth*);
+
+struct word {
+    const struct word *next; // следующий элемент списка
+    const char *name; // название
+    function handler; // обработчик
+};
+
+struct word *word_create(const char *name, function handler,
+    const struct word *next);
+
+// поиск в односвязном списке
+const struct word *word_find(size_t length, char name[length],
+    const struct word *head);
+
 #endif

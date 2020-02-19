@@ -4,6 +4,7 @@
 #include <inttypes.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <string.h>
 
 enum forth_result read_word(FILE* input, size_t size, char buffer[size],
     size_t *length)
@@ -71,4 +72,26 @@ cell forth_pop(struct forth *forth)
     assert(forth->sp > forth->sp0);
     forth->sp -= 1;
     return *forth->sp;
+}
+
+struct word* word_create(const char *name, function handler,
+    const struct word *next)
+{
+    struct word *result = malloc(sizeof(struct word));
+    result->name = name;
+    result->handler = handler;
+    result->next = next;
+    return result;
+}
+
+const struct word *word_find(size_t length, char name[length],
+    const struct word *head)
+{
+    while (head) {
+        if (!strncmp(head->name, name, length+1)) {
+            return head;
+        }
+        head = head->next;
+    }
+    return NULL;
 }

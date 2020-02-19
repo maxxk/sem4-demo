@@ -2,6 +2,7 @@
 #include "words.h"
 #include <inttypes.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define BUFFER 32 
@@ -20,15 +21,18 @@ int main(void)
     size_t length = 0;
     cell value = 0;
     struct forth forth = {0};
+    const struct word *found = NULL;
+    struct word *previous = NULL;
+
+    struct word *head = word_create("pop", pop, NULL);
+    head = word_create("show", show, head);
 
     forth_init(&forth, STACK);
     while ((status = read_word(stdin, BUFFER, buffer, &length)) == FORTH_OK) {
         value = strtointptr(buffer, &last, 10);
         if (last - buffer < (int)length) { // считали не всю строку ⇒ не число
-            if (!strncmp(buffer, "pop", MAX(length, strlen("pop")))) {
-                pop(&forth);
-            } else if (!strncmp(buffer, "show", MAX(length, strlen("show")))) {
-                show(&forth);
+            if ((found = word_find(length, buffer, head)) != NULL) {
+                found->handler(&forth);
             } else {
                 printf("Unknown command\n");
             }
@@ -38,6 +42,12 @@ int main(void)
     }
     printf("Complete with status: %d\n", status);
     forth_free(&forth);
+
+    while (head) {
+        previous = head;
+        head =(struct word*)head->next;
+        free(previous);
+    }
 
     return 0;
 }
