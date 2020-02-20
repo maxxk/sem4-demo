@@ -3,7 +3,7 @@ all: build/forth build/test
 build/forth: build/forth.c.o build/main.c.o build/words.c.o
 	gcc $^ -o $@ 
 
-CFLAGS_PROFILE = -O0 -fprofile-arcs -ftest-coverage
+CFLAGS_PROFILE = -O0 # -fprofile-arcs -ftest-coverage
 # Для тестов и для финальной программы мы используем разные флаги
 # Если мы запустим make, forth.c.o скомпилируется без флагов профилирования
 build/test: build/forth.c-profile.o build/forth.test.c-profile.o build/test.c-profile.o
@@ -31,5 +31,9 @@ build:
 check: build/test
 	build/test
 
-coverage: check
-	cd build && gcovr -r .. --html --html-details -o index.html
+coverage: build/test
+	#cd build && gcovr -r .. --html --html-details -o index.html
+	kcov build/coverage build/test
+
+clean:
+	rm -rf build/*
