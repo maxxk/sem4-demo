@@ -62,7 +62,7 @@ void forth_free(struct forth *forth)
 
 void forth_push(struct forth *forth, cell number)
 {
-    assert(forth->sp + 1 - forth->sp0 < (int)forth->stack);
+    assert(forth->sp - forth->sp0 < (int)forth->stack);
     *forth->sp = number;
     forth->sp += 1;
 }
