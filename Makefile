@@ -16,10 +16,10 @@ CFLAGS_WARN = -std=c99 -pedantic -Wall -Werror -Wextra -pedantic-errors \
         -Wcast-align -Wfloat-equal -D__STRICT_ANSI__ \
 		-Wbad-function-cast
 
-build/%.c.o: src/%.c build
+build/%.c.o: src/%.c | build
 	gcc -c $<  -o $@ $(CFLAGS_WARN) -I./include -MMD -g
 
-build/%.c-profile.o: src/%.c build
+build/%.c-profile.o: src/%.c | build
 	gcc -c $<  -o $@ $(CFLAGS_WARN) $(CFLAGS_PROFILE) -I./include -MMD -g
 
 DEPS := $(shell find build -name *.d)
