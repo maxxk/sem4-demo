@@ -29,4 +29,7 @@ void lt(struct forth *forth);
 void _eq(struct forth *forth);
 void within(struct forth *forth);
 
+void forth_exit(struct forth *forth);
+void forth_interpreter_stub(struct forth *worth);
+
 #endif

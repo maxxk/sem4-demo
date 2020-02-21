@@ -8,14 +8,21 @@
 
 struct word *words_init(void)
 {
-    struct word *head = word_create("pop", pop, NULL);
-    head = word_create("show", show, head);
+    const struct word *dup_word;
+    const struct word *mul_word;
+    const struct word *exit_word;
+    const struct word **instructions;
+
+    struct word *head = word_create("interpret", forth_interpreter_stub, NULL);
     head = word_create("pop", pop, head);
+    head = word_create("show", show, head);
     head = word_create("drop", pop, head);
     head = word_create("dup", _dup, head);
+    dup_word = head;
     head = word_create("+", add, head);
     head = word_create("-", sub, head);
     head = word_create("*", mul, head);
+    mul_word = head;
     head = word_create("/", _div, head);
     head = word_create("%", mod, head);
     head = word_create("swap", swap, head);
@@ -32,6 +39,21 @@ struct word *words_init(void)
     head = word_create("=", _eq, head);
     head = word_create("<", lt, head);
     head = word_create("within", within, head);
+    head = word_create("exit", forth_exit, head);
+    exit_word = head;
+
+    instructions = malloc(3 * sizeof(struct word **));
+    instructions[0] = dup_word;
+    instructions[1] = mul_word;
+    instructions[2] = exit_word;
+    head = word_create_compiled("square", instructions, head);
+
+    // Проверим второй уровень вызова
+    instructions = malloc(3 * sizeof(struct word**));
+    instructions[0] = head;
+    instructions[1] = head;
+    instructions[2] = exit_word;
+    head = word_create_compiled("quad", instructions, head);
     return head;
 }
 
@@ -42,6 +64,9 @@ void words_free(struct word *head)
     while (head) {
         previous = head;
         head =(struct word*)head->next;
+        if (previous->compiled) {
+            free(previous->handler.instructions);
+        }
         free(previous);
     }
 }
@@ -187,4 +212,18 @@ void within(struct forth *forth) {
     l = forth_pop(forth);
     a = forth_pop(forth);
     forth_push(forth, l <= a && a < r ? -1 : 0);
+}
+
+void forth_exit(struct forth *forth)
+{
+    cell r;
+    r = forth_pop_return(forth);
+    forth->ip = (const struct word **)r;
+}
+
+void forth_interpreter_stub(struct forth *forth)
+{
+    (void)forth;
+    printf("Error: return stack underflow (should be handled inside interpreter)\n");
+    exit(2);
 }
