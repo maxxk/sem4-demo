@@ -1,7 +1,7 @@
 all: build/forth build/test
 
 build/forth: build/forth.c.o build/main.c.o build/words.c.o
-	gcc $^ -o $@ 
+	gcc $^ -o $@ -Ofast -flto -mtune=native -g
 
 CFLAGS_PROFILE = -O0 # -fprofile-arcs -ftest-coverage
 # Для тестов и для финальной программы мы используем разные флаги
@@ -17,7 +17,7 @@ CFLAGS_WARN = -std=c99 -pedantic -Wall -Werror -Wextra -pedantic-errors \
 		-Wbad-function-cast
 
 build/%.c.o: src/%.c | build
-	gcc -c $<  -o $@ $(CFLAGS_WARN) -I./include -MMD -g
+	gcc -c $<  -o $@ $(CFLAGS_WARN) -I./include -MMD -g -Ofast -flto -mtune=native -DNDEBUG
 
 build/%.c-profile.o: src/%.c | build
 	gcc -c $<  -o $@ $(CFLAGS_WARN) $(CFLAGS_PROFILE) -I./include -MMD -g
