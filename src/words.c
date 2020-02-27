@@ -45,6 +45,7 @@ struct word *words_init(void)
     head = word_create_native(":", compile_start, head);
     head = word_create_native(";", compile_end, head);
     head->immediate = true;
+    head = word_create_native("lit", lit, head);
 
     instructions = malloc(3 * sizeof(struct word **));
     instructions[0] = dup_word;
@@ -257,6 +258,13 @@ void compile_end(struct forth *forth)
     assert(exit);
     forth_emit(forth, (cell)exit);
     forth->compiling = false;
+}
+
+void lit(struct forth *forth)
+{
+    cell value = *(cell *)forth->ip;
+    forth->ip += 1;
+    forth_push(forth, value);
 }
 
 static char* strdup_n(size_t length, const char original[length])

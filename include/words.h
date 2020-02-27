@@ -33,5 +33,6 @@ void forth_exit(struct forth *forth);
 void forth_interpreter_stub(struct forth *worth);
 void compile_start(struct forth *forth);
 void compile_end(struct forth *forth);
+void lit(struct forth *forth);
 
 #endif

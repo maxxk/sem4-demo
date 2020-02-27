@@ -133,7 +133,10 @@ enum forth_result forth_run(struct forth *forth)
     const struct word *found = NULL;
     const struct word *const stopword =
         word_find(strlen("interpret"), "interpret", forth->latest);
+    const struct word *const literal =
+        word_find(strlen("lit"), "lit", forth->latest);
     assert(stopword);
+    assert(literal);
 
     forth->ip = &stopword;
     while ((status = read_word(forth->input, FORTH_MAX_WORD, buffer, &length))
@@ -152,7 +155,12 @@ enum forth_result forth_run(struct forth *forth)
                 printf("Unknown command\n");
             }
         } else {
-            forth_push(forth, value);
+            if (forth->compiling) {
+                forth_emit(forth, (cell)literal);
+                forth_emit(forth, value);
+            } else {
+                forth_push(forth, value);
+            }
         }
     }
     return status;
