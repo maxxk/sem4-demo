@@ -37,7 +37,7 @@ struct forth {
 
     bool compiling;
     FILE *input;
-    const struct word *latest;
+    struct word *latest;
 };
 
 void forth_init(struct forth *forth, size_t stack, size_t return_stack,
@@ -62,6 +62,7 @@ struct word {
     const char *name; // название
     bool compiled;
     bool immediate;
+    bool hidden;
     union {
         function native; // обработчик
         const struct word **instructions;

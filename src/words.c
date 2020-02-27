@@ -250,6 +250,7 @@ void compile_start(struct forth *forth)
         (const struct word**)forth->mp, forth->latest);
     assert(word);
     forth->latest = word;
+    forth->latest->hidden = true;
 }
 
 void compile_end(struct forth *forth)
@@ -258,6 +259,7 @@ void compile_end(struct forth *forth)
     assert(exit);
     forth_emit(forth, (cell)exit);
     forth->compiling = false;
+    forth->latest->hidden = false;
 }
 
 void lit(struct forth *forth)

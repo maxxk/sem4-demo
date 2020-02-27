@@ -215,7 +215,7 @@ const struct word *word_find(size_t length, char name[length],
     const struct word *head)
 {
     while (head) {
-        if (!strncmp(head->name, name, length+1)) {
+        if (!strncmp(head->name, name, length+1) && !head->hidden) {
             return head;
         }
         head = head->next;
