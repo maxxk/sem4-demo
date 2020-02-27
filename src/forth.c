@@ -49,7 +49,8 @@ intptr_t strtointptr(const char *str, char **str_end, int base)
     }
 }
 
-void forth_init(struct forth *forth, size_t stack, size_t return_stack)
+void forth_init(struct forth *forth, size_t stack, size_t return_stack,
+    size_t memory)
 {
     forth->stack = stack;
     forth->sp0 = malloc(forth->stack * sizeof(cell));
@@ -58,6 +59,12 @@ void forth_init(struct forth *forth, size_t stack, size_t return_stack)
     forth->return_stack = return_stack;
     forth->rp0 = malloc(forth->return_stack * sizeof(cell));
     forth->rp = forth->rp0;
+
+    forth->memory = memory;
+    forth->mp0 = malloc(forth->memory * sizeof(cell));
+    forth->mp = forth->mp0;
+
+    forth->compiling = false;
 }
 
 void forth_free(struct forth *forth)
@@ -65,6 +72,14 @@ void forth_free(struct forth *forth)
     free(forth->sp0);
     forth->sp = 0;
     forth->sp0 = 0;
+
+    free(forth->rp0);
+    forth->rp = 0;
+    forth->rp0 = 0;
+
+    free(forth->mp0);
+    forth->mp = 0;
+    forth->mp0 = 0;
 }
 
 void forth_push(struct forth *forth, cell number)
@@ -101,25 +116,34 @@ cell forth_pop_return(struct forth *forth)
     return forth->rp[0];
 }
 
-#define BUFFER 32 
-enum forth_result forth_run(struct forth *forth, struct word *head)
+void forth_emit(struct forth *forth, cell value)
+{
+    assert(forth->mp - forth->mp0 < (int)forth->memory);
+    forth->mp[0] = value;
+    forth->mp += 1;
+}
+
+enum forth_result forth_run(struct forth *forth)
 {
     enum forth_result status;
     char *last;
-    char buffer[BUFFER+1] = {0}; // 1 символ на завершающий нулевой
+    char buffer[FORTH_MAX_WORD+1] = {0}; // 1 символ на завершающий нулевой
     size_t length = 0;
     cell value = 0;
     const struct word *found = NULL;
     const struct word *const stopword =
-        word_find(strlen("interpret"), "interpret", head);
+        word_find(strlen("interpret"), "interpret", forth->latest);
     assert(stopword);
 
     forth->ip = &stopword;
-    while ((status = read_word(stdin, BUFFER, buffer, &length)) == FORTH_OK) {
+    while ((status = read_word(forth->input, FORTH_MAX_WORD, buffer, &length))
+            == FORTH_OK) {
         value = strtointptr(buffer, &last, 10);
         if (last - buffer < (int)length) { // считали не всю строку ⇒ не число
-            if ((found = word_find(length, buffer, head)) != NULL) {
-                if (!found->compiled) {
+            if ((found = word_find(length, buffer, forth->latest)) != NULL) {
+                if (forth->compiling && !found->immediate) {
+                    forth_emit(forth, (cell)found);
+                } else if (!found->compiled) {
                     found->handler.native(forth);
                 } else {
                     run_compiled(forth, found->handler.instructions, stopword);
@@ -133,7 +157,6 @@ enum forth_result forth_run(struct forth *forth, struct word *head)
     }
     return status;
 }
-#undef BUFFER
 
 static void run_compiled(struct forth *forth,
     const struct word **instructions, const struct word *const stopword)
@@ -156,12 +179,13 @@ static void run_compiled(struct forth *forth,
     }
 }
 
-struct word* word_create(const char *name, function handler,
+struct word* word_create_native(const char *name, function handler,
     const struct word *next)
 {
     struct word *result = malloc(sizeof(struct word));
     result->name = name;
     result->compiled = false;
+    result->immediate = false;
     result->handler.native = handler;
     result->next = next;
     return result;
@@ -173,6 +197,7 @@ struct word *word_create_compiled(const char *name, const struct word **instruct
     struct word *result = malloc(sizeof(struct word));
     result->name = name;
     result->compiled = true;
+    result->immediate = false;
     result->handler.instructions = instructions;
     result->next = next;
     return result;

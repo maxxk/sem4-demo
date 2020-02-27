@@ -5,6 +5,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 struct word *words_init(void)
 {
@@ -13,34 +14,37 @@ struct word *words_init(void)
     const struct word *exit_word;
     const struct word **instructions;
 
-    struct word *head = word_create("interpret", forth_interpreter_stub, NULL);
-    head = word_create("pop", pop, head);
-    head = word_create("show", show, head);
-    head = word_create("drop", pop, head);
-    head = word_create("dup", _dup, head);
+    struct word *head = word_create_native("interpret", forth_interpreter_stub, NULL);
+    head = word_create_native("pop", pop, head);
+    head = word_create_native("show", show, head);
+    head = word_create_native("drop", pop, head);
+    head = word_create_native("dup", _dup, head);
     dup_word = head;
-    head = word_create("+", add, head);
-    head = word_create("-", sub, head);
-    head = word_create("*", mul, head);
+    head = word_create_native("+", add, head);
+    head = word_create_native("-", sub, head);
+    head = word_create_native("*", mul, head);
     mul_word = head;
-    head = word_create("/", _div, head);
-    head = word_create("%", mod, head);
-    head = word_create("swap", swap, head);
-    head = word_create("rot", rot, head);
-    head = word_create("-rot", rot_back, head);
-    head = word_create("show", show, head);
-    head = word_create("over", over, head);
-    head = word_create("true", _true, head);
-    head = word_create("false", _false, head);
-    head = word_create("xor", _xor, head);
-    head = word_create("or", _or, head);
-    head = word_create("and", _and, head);
-    head = word_create("not", _not, head);
-    head = word_create("=", _eq, head);
-    head = word_create("<", lt, head);
-    head = word_create("within", within, head);
-    head = word_create("exit", forth_exit, head);
+    head = word_create_native("/", _div, head);
+    head = word_create_native("%", mod, head);
+    head = word_create_native("swap", swap, head);
+    head = word_create_native("rot", rot, head);
+    head = word_create_native("-rot", rot_back, head);
+    head = word_create_native("show", show, head);
+    head = word_create_native("over", over, head);
+    head = word_create_native("true", _true, head);
+    head = word_create_native("false", _false, head);
+    head = word_create_native("xor", _xor, head);
+    head = word_create_native("or", _or, head);
+    head = word_create_native("and", _and, head);
+    head = word_create_native("not", _not, head);
+    head = word_create_native("=", _eq, head);
+    head = word_create_native("<", lt, head);
+    head = word_create_native("within", within, head);
+    head = word_create_native("exit", forth_exit, head);
     exit_word = head;
+    head = word_create_native(":", compile_start, head);
+    head = word_create_native(";", compile_end, head);
+    head->immediate = true;
 
     instructions = malloc(3 * sizeof(struct word **));
     instructions[0] = dup_word;
@@ -226,4 +230,39 @@ void forth_interpreter_stub(struct forth *forth)
     (void)forth;
     printf("Error: return stack underflow (should be handled inside interpreter)\n");
     exit(2);
+}
+
+static char* strdup_n(size_t length, const char original[length]);
+
+void compile_start(struct forth *forth)
+{
+    struct word *word;
+    size_t length = 0;
+    char buffer[FORTH_MAX_WORD+1] = {0};
+    
+    forth->compiling = true;
+    
+    read_word(forth->input, FORTH_MAX_WORD, buffer, &length);
+    assert(length > 0);
+
+    word = word_create_compiled(strdup_n(length, buffer),
+        (const struct word**)forth->mp, forth->latest);
+    assert(word);
+    forth->latest = word;
+}
+
+void compile_end(struct forth *forth)
+{
+    const struct word *exit = word_find(strlen("exit"), "exit", forth->latest);
+    assert(exit);
+    forth_emit(forth, (cell)exit);
+    forth->compiling = false;
+}
+
+static char* strdup_n(size_t length, const char original[length])
+{
+    char *result = malloc(length+1);
+    strncpy(result, original, length);
+    result[length] = '\0';
+    return result;
 }

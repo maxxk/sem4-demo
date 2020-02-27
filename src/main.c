@@ -6,6 +6,7 @@
 
 #define STACK 16384
 #define RETURN_STACK 4096
+#define MEMORY 16384
 
 #define MAX(a, b) (a < b ? b : a)
 
@@ -15,8 +16,10 @@ int main(void)
     struct forth forth = {0};
     struct word *head = words_init();
 
-    forth_init(&forth, STACK, RETURN_STACK);
-    status = forth_run(&forth, head);
+    forth_init(&forth, STACK, RETURN_STACK, MEMORY);
+    forth.input = stdin;
+    forth.latest = head;
+    status = forth_run(&forth);
     printf("Complete with status: %d\n", status);
     forth_free(&forth);
     words_free(head);
