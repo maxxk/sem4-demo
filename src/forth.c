@@ -7,7 +7,7 @@
 #include <string.h>
 
 static void run_compiled(struct forth *forth,
-    const struct word **instructions, const struct word *stopword);
+    const struct word *const *instructions, const struct word *stopword);
 
 enum forth_result read_word(FILE* input, size_t size, char buffer[size],
     size_t *length)
@@ -65,6 +65,7 @@ void forth_init(struct forth *forth, size_t stack, size_t return_stack,
     forth->mp = forth->mp0;
 
     forth->compiling = false;
+    forth->latest = NULL;
 }
 
 void forth_free(struct forth *forth)
@@ -147,9 +148,9 @@ enum forth_result forth_run(struct forth *forth)
                 if (forth->compiling && !found->immediate) {
                     forth_emit(forth, (cell)found);
                 } else if (!found->compiled) {
-                    found->handler.native(forth);
+                    word_code(found)->native(forth);
                 } else {
-                    run_compiled(forth, found->handler.instructions, stopword);
+                    run_compiled(forth, &word_code(found)->instructions, stopword);
                 }
             } else {
                 printf("Unknown command\n");
@@ -167,49 +168,33 @@ enum forth_result forth_run(struct forth *forth)
 }
 
 static void run_compiled(struct forth *forth,
-    const struct word **instructions, const struct word *const stopword)
+    const struct word * const*instructions, const struct word *const stopword)
 {
     forth_push_return(forth, (cell)forth->ip);
     forth->ip = instructions;
     while (forth->ip[0] != stopword) {
         const struct word *instr = forth->ip[0];
-        // printf("Running: %s", instr->name);
         forth->ip += 1;
 
         if (!instr->compiled) {
-            // printf(" native\n");
-            instr->handler.native(forth);
+            word_code(instr)->native(forth);
         } else {
-            // printf(" call\n");
             forth_push_return(forth, (cell)forth->ip);
-            forth->ip = instr->handler.instructions;
+            forth->ip = &word_code(instr)->instructions;
         }
     }
 }
 
-struct word* word_create_native(const char *name, function handler,
-    const struct word *next)
+static uintptr_t align(uintptr_t value, uint8_t alignment);
+
+struct word* word_create_native(struct forth *forth,
+    const char *name, function handler)
 {
-    struct word *result = malloc(sizeof(struct word));
-    result->name = name;
-    result->compiled = false;
-    result->immediate = false;
-    result->handler.native = handler;
-    result->next = next;
+    struct word *result = word_add(forth, name, false);
+    forth_emit(forth, (cell)handler);
     return result;
 }
 
-struct word *word_create_compiled(const char *name, const struct word **instructions,
-    const struct word *next)
-{
-    struct word *result = malloc(sizeof(struct word));
-    result->name = name;
-    result->compiled = true;
-    result->immediate = false;
-    result->handler.instructions = instructions;
-    result->next = next;
-    return result;
-}
 
 const struct word *word_find(size_t length, char name[length],
     const struct word *head)
@@ -222,3 +207,31 @@ const struct word *word_find(size_t length, char name[length],
     }
     return NULL;
 }
+
+
+struct word *word_add(struct forth *forth, const char *name, bool compiled)
+{
+    struct word *result = (struct word *)forth->mp;
+    result->next = forth->latest;
+    result->compiled = compiled;
+    result->immediate = false;
+    result->hidden = false;
+    result->length = strlen(name);
+    memcpy((void*)result->name, name, result->length);
+
+    forth->latest = result;
+    forth->mp = (cell*)word_code(result);
+    return result;
+}
+
+const union handler *word_code(const struct word *word)
+{
+    uintptr_t size = align(sizeof(struct word) + word->length + 1, sizeof(cell));
+    return (const union handler*)((uint8_t*)word + size);
+}
+
+static uintptr_t align(uintptr_t value, uint8_t alignment)
+{
+    return ((value - 1) | (alignment - 1)) + 1;
+}
+

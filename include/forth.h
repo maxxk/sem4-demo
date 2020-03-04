@@ -57,22 +57,25 @@ enum forth_result forth_run(struct forth *forth);
 
 typedef void (*function)(struct forth*);
 
+union handler {
+        function native; // обработчик
+        const struct word *instructions;
+};
+
 struct word {
     const struct word *next; // следующий элемент списка
-    const char *name; // название
     bool compiled;
     bool immediate;
     bool hidden;
-    union {
-        function native; // обработчик
-        const struct word **instructions;
-    } handler;
+    uint8_t length;
+    const char name[];
 };
 
-struct word *word_create_native(const char *name, function handler,
-    const struct word *next);
-struct word *word_create_compiled(const char *name, const struct word **instructions,
-    const struct word *next);
+const union handler *word_code(const struct word *word);
+
+struct word* word_add(struct forth *forth, const char *name, bool compiled);
+struct word *word_create_native(struct forth *forth,
+    const char *name, function handler);
 
 // поиск в односвязном списке
 const struct word *word_find(size_t length, char name[length],

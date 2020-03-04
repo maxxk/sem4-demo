@@ -14,15 +14,12 @@ int main(void)
 {
     enum forth_result status;
     struct forth forth = {0};
-    struct word *head = words_init();
-
     forth_init(&forth, STACK, RETURN_STACK, MEMORY);
+    words_init(&forth);
     forth.input = stdin;
-    forth.latest = head;
     status = forth_run(&forth);
     printf("Complete with status: %d\n", status);
     forth_free(&forth);
-    words_free(head);
 
     return 0;
 }

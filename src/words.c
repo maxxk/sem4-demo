@@ -7,73 +7,52 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct word *words_init(void)
+void words_init(struct forth *forth)
 {
     const struct word *dup_word;
     const struct word *mul_word;
     const struct word *exit_word;
-    const struct word **instructions;
+    const struct word *square_word;
 
-    struct word *head = word_create_native("interpret", forth_interpreter_stub, NULL);
-    head = word_create_native("pop", pop, head);
-    head = word_create_native("show", show, head);
-    head = word_create_native("drop", pop, head);
-    head = word_create_native("dup", _dup, head);
-    dup_word = head;
-    head = word_create_native("+", add, head);
-    head = word_create_native("-", sub, head);
-    head = word_create_native("*", mul, head);
-    mul_word = head;
-    head = word_create_native("/", _div, head);
-    head = word_create_native("%", mod, head);
-    head = word_create_native("swap", swap, head);
-    head = word_create_native("rot", rot, head);
-    head = word_create_native("-rot", rot_back, head);
-    head = word_create_native("show", show, head);
-    head = word_create_native("over", over, head);
-    head = word_create_native("true", _true, head);
-    head = word_create_native("false", _false, head);
-    head = word_create_native("xor", _xor, head);
-    head = word_create_native("or", _or, head);
-    head = word_create_native("and", _and, head);
-    head = word_create_native("not", _not, head);
-    head = word_create_native("=", _eq, head);
-    head = word_create_native("<", lt, head);
-    head = word_create_native("within", within, head);
-    head = word_create_native("exit", forth_exit, head);
-    exit_word = head;
-    head = word_create_native(":", compile_start, head);
-    head = word_create_native(";", compile_end, head);
-    head->immediate = true;
-    head = word_create_native("lit", lit, head);
+    word_create_native(forth, "interpret", forth_interpreter_stub);
+    word_create_native(forth, "pop", pop);
+    word_create_native(forth, "show", show);
+    word_create_native(forth, "drop", pop);
+    dup_word = word_create_native(forth, "dup", _dup);
+    word_create_native(forth, "+", add);
+    word_create_native(forth, "-", sub);
+    mul_word = word_create_native(forth, "*", mul);
+    word_create_native(forth, "/", _div);
+    word_create_native(forth, "%", mod);
+    word_create_native(forth, "swap", swap);
+    word_create_native(forth, "rot", rot);
+    word_create_native(forth, "-rot", rot_back);
+    word_create_native(forth, "show", show);
+    word_create_native(forth, "over", over);
+    word_create_native(forth, "true", _true);
+    word_create_native(forth, "false", _false);
+    word_create_native(forth, "xor", _xor);
+    word_create_native(forth, "or", _or);
+    word_create_native(forth, "and", _and);
+    word_create_native(forth, "not", _not);
+    word_create_native(forth, "=", _eq);
+    word_create_native(forth, "<", lt);
+    word_create_native(forth, "within", within);
+    exit_word = word_create_native(forth, "exit", forth_exit);
+    word_create_native(forth, ":", compile_start);
+    word_create_native(forth, ";", compile_end);
+    forth->latest->immediate = true;
+    word_create_native(forth, "lit", lit);
 
-    instructions = malloc(3 * sizeof(struct word **));
-    instructions[0] = dup_word;
-    instructions[1] = mul_word;
-    instructions[2] = exit_word;
-    head = word_create_compiled("square", instructions, head);
-
-    // Проверим второй уровень вызова
-    instructions = malloc(3 * sizeof(struct word**));
-    instructions[0] = head;
-    instructions[1] = head;
-    instructions[2] = exit_word;
-    head = word_create_compiled("quad", instructions, head);
-    return head;
-}
-
-void words_free(struct word *head)
-{
-    struct word *previous = NULL;
-
-    while (head) {
-        previous = head;
-        head =(struct word*)head->next;
-        if (previous->compiled) {
-            free(previous->handler.instructions);
-        }
-        free(previous);
-    }
+    square_word = word_add(forth, "square", true);
+    forth_emit(forth, (cell)dup_word);
+    forth_emit(forth, (cell)mul_word);
+    forth_emit(forth, (cell)exit_word);
+    
+    word_add(forth, "quad", true);
+    forth_emit(forth, (cell)square_word);
+    forth_emit(forth, (cell)square_word);
+    forth_emit(forth, (cell)exit_word);
 }
 
 void show(struct forth *forth)
@@ -233,8 +212,6 @@ void forth_interpreter_stub(struct forth *forth)
     exit(2);
 }
 
-static char* strdup_n(size_t length, const char original[length]);
-
 void compile_start(struct forth *forth)
 {
     struct word *word;
@@ -245,12 +222,11 @@ void compile_start(struct forth *forth)
     
     read_word(forth->input, FORTH_MAX_WORD, buffer, &length);
     assert(length > 0);
+    assert(length == strlen(buffer));
 
-    word = word_create_compiled(strdup_n(length, buffer),
-        (const struct word**)forth->mp, forth->latest);
+    word = word_add(forth, buffer, true);
     assert(word);
-    forth->latest = word;
-    forth->latest->hidden = true;
+    word->hidden = true;
 }
 
 void compile_end(struct forth *forth)
@@ -267,12 +243,4 @@ void lit(struct forth *forth)
     cell value = *(cell *)forth->ip;
     forth->ip += 1;
     forth_push(forth, value);
-}
-
-static char* strdup_n(size_t length, const char original[length])
-{
-    char *result = malloc(length+1);
-    strncpy(result, original, length);
-    result[length] = '\0';
-    return result;
 }

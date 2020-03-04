@@ -3,8 +3,7 @@
 
 struct forth;
 
-struct word *words_init(void);
-void words_free(struct word *head);
+void words_init(struct forth *forth);
 
 void show(struct forth *forth);
 void pop(struct forth *forth);
